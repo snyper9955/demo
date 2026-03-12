@@ -1,4 +1,4 @@
-const Membership = require("../models/membership");
+const Membership = require("../models/Membership");
 const Member = require("../models/Member");
 const User = require("../models/User");
 

@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Member = require("../models/Member");
-const Membership = require("../models/membership");
+const Membership = require("../models/Membership");
 const Attendance = require("../models/Attendance");
 
 // @desc    Get top-level dashboard statistics for Admin
