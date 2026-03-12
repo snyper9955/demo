@@ -50,7 +50,7 @@ exports.getAllMembersData = async (req, res) => {
             let activeMembership = await Membership.findOne({ 
                 member: member._id, 
                 status: { $in: ["active", "pending"] } 
-            });
+            }).sort({ createdAt: -1 });
 
             if (activeMembership) {
                 // If it's technically expired but still marked active, reflect it in status WITHOUT saving here

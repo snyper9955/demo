@@ -145,7 +145,7 @@ exports.getUserMembership = async (req, res) => {
     let membership = await Membership.findOne({ 
         member: memberId, 
         status: { $in: ["active", "pending"] } 
-    });
+    }).sort({ createdAt: -1 });
 
     if (!membership) {
       // Return 200 with null instead of 404 to avoid browser console errors for new users
