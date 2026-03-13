@@ -7,6 +7,7 @@ const membershipRoutes = require("./routes/membership.routes");
 const memberRoutes = require("./routes/member.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const adminRoutes = require("./routes/admin.routes");
+const paymentRoutes = require("./routes/payment.routes");
 
 // Middleware
 app.use(express.json());
@@ -31,5 +32,8 @@ app.use("/api/members", memberRoutes);
 
 // Admin Routes
 app.use("/api/admin", adminRoutes);
+
+// Payment Routes
+app.use("/api/payments", paymentRoutes);
 
 module.exports = app;
