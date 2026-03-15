@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Member = require("../models/Member");
 const Membership = require("../models/Membership");
 const Attendance = require("../models/Attendance");
+const Payment = require("../models/Payment");
 
 // @desc    Get top-level dashboard statistics for Admin
 // @route   GET /api/admin/stats
@@ -13,11 +14,19 @@ exports.getDashboardStats = async (req, res) => {
     const totalTrainers = await User.countDocuments({ role: "trainer" });
     const activeSubscriptions = await Membership.countDocuments({ status: "active" });
 
+    // Sum all successful payment amounts
+    const revenueResult = await Payment.aggregate([
+      { $match: { paymentStatus: "success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
     res.status(200).json({
       totalUsers,
       totalMembers,
       totalTrainers,
       activeSubscriptions,
+      totalRevenue,
       todaysTotalVisits: 0,
       currentlyInside: 0
     });
