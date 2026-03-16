@@ -6,8 +6,11 @@ const {
   getAllTrainers
 } = require("../controller/admin.controller");
 
-// NOTE: In a production app, you would add an admin auth middleware here 
-// to verify req.user.role === 'admin' before granting access.
+const { protect, admin } = require("../middleware/auth.middleware");
+
+// Apply protection to all admin routes
+router.use(protect);
+router.use(admin);
 
 router.get("/stats", getDashboardStats);
 router.get("/members", getAllMembersData);
