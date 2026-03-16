@@ -8,12 +8,14 @@ const {
 
 const { protect, admin } = require("../middleware/auth.middleware");
 
-// Apply protection to all admin routes
+// Get master list of all members (Accessible to all authenticated users)
+router.get("/members", protect, getAllMembersData);
+
+// Protected Admin-only routes
 router.use(protect);
 router.use(admin);
 
 router.get("/stats", getDashboardStats);
-router.get("/members", getAllMembersData);
 router.get("/trainers", getAllTrainers);
 
 module.exports = router;

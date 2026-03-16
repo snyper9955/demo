@@ -65,7 +65,6 @@ exports.getAllMembersData = async (req, res) => {
             }).sort({ createdAt: -1 });
 
             if (activeMembership) {
-                // If it's technically expired but still marked active, reflect it in status WITHOUT saving here
                 if (activeMembership.endDate < new Date()) {
                     subscriptionStatus = "Expired";
                     subscriptionEnd = activeMembership.endDate;
@@ -77,7 +76,6 @@ exports.getAllMembersData = async (req, res) => {
                     subscriptionEnd = activeMembership.endDate;
                 }
                 
-                // If member doesn't have a direct timeSlot, fallback to membership
                 if (!timeSlot) timeSlot = activeMembership.timeSlot || null;
                 membershipId = activeMembership._id;
             } else {
@@ -89,22 +87,28 @@ exports.getAllMembersData = async (req, res) => {
             subscriptionStatus = "Trainer";
         }
 
+        // Return sensitive info only to admins
+        const isAdmin = req.user && req.user.role === 'admin';
+
         return {
             _id: u._id,
             memberProfileId: member ? member._id : null,
             memberId,
             name: u.name || "Unknown",
-            email: u.email || "Unknown",
-            phone: u.phone || "N/A",
             role: u.role,
-            emergencyContact: member ? member.emergencyContact : null,
-            trainerAssigned: member?.trainerAssigned?.name || null,
-            trainerAssignedId: member?.trainerAssigned?._id || null,
             subscriptionStatus,
             subscriptionEnd,
             timeSlot,
             timeSlots: timeSlots || [],
-            membershipId,
+            trainerAssigned: member?.trainerAssigned?.name || null,
+            // Sensitive fields - Admin only
+            ...(isAdmin && {
+                email: u.email || "Unknown",
+                phone: u.phone || "N/A",
+                emergencyContact: member ? member.emergencyContact : null,
+                trainerAssignedId: member?.trainerAssigned?._id || null,
+                membershipId,
+            }),
             isInsideTheGym: false
         };
     }));
