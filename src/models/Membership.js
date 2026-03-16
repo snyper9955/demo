@@ -43,6 +43,11 @@ const membershipSchema = new mongoose.Schema(
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
+  },
+
+  expiryNotificationSent: {
+    type: Boolean,
+    default: false
   }
 
 },

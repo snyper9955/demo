@@ -12,11 +12,18 @@ const razorpay = new Razorpay({
 // @route  POST /api/payments/create-order
 exports.createOrder = async (req, res) => {
   try {
+    const { amount } = req.body;
+    
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ message: "Invalid amount provided" });
+    }
+
     const options = {
-      amount: 9900, // ₹99 = 9900 paise
+      amount: amount * 100, // amount in paise
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
     };
+    
     const order = await razorpay.orders.create(options);
     res.status(200).json({
       orderId: order.id,
@@ -51,7 +58,7 @@ exports.verifyPayment = async (req, res) => {
       await Payment.create({
         member: memberId,
         membership: membershipId || undefined,
-        amount: amount || 99, // default ₹99
+        amount: amount || 2, // default ₹2
         paymentMethod: "online",
         transactionId: razorpay_payment_id,
         paymentStatus: "success",

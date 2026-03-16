@@ -12,7 +12,10 @@ exports.getDashboardStats = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const totalMembers = await Member.countDocuments();
     const totalTrainers = await User.countDocuments({ role: "trainer" });
-    const activeSubscriptions = await Membership.countDocuments({ status: "active" });
+    const activeSubscriptions = await Membership.countDocuments({ 
+      status: "active",
+      endDate: { $gte: new Date() } 
+    });
 
     // Sum all successful payment amounts
     const revenueResult = await Payment.aggregate([
