@@ -60,6 +60,7 @@ exports.getAllMembersData = async (req, res) => {
         let timeSlots = member ? (member.timeSlots && member.timeSlots.length > 0 ? member.timeSlots : (member.timeSlot ? [member.timeSlot] : [])) : [];
         let timeSlot = timeSlots.length > 0 ? timeSlots[0] : null;
         let memberId = member ? member.memberId : "N/A";
+        let memberStatus = member ? member.status : "inactive";
 
         if (member) {
             let activeMembership = await Membership.findOne({ 
@@ -99,6 +100,7 @@ exports.getAllMembersData = async (req, res) => {
             timeSlot,
             timeSlots: timeSlots || [],
             trainerAssigned: member?.trainerAssigned?.name || null,
+            memberStatus,
             // Sensitive fields - Admin only
             ...(isAdmin && {
                 email: u.email || "Unknown",
@@ -161,6 +163,12 @@ exports.activateMembershipManually = async (req, res) => {
     membership.endDate = newEndDate;
     
     await membership.save();
+
+    // Also ensure the Member profile is marked as active
+    if (membership.member && membership.member.status !== "active") {
+      membership.member.status = "active";
+      await membership.member.save();
+    }
     console.log(`Membership ${id} saved as active. New End Date: ${newEndDate}`);
 
     // Send WhatsApp notification

@@ -43,6 +43,12 @@ exports.createMembership = async (req, res) => {
       return res.status(404).json({ message: "Member profile not found and could not be created." });
     }
 
+    // Ensure member is active if they were previously inactive/cancelled
+    if (memberExists.status !== "active") {
+      memberExists.status = "active";
+      await memberExists.save();
+    }
+
     // Ensure we use the actual Member document ID for the membership record
     const actualMemberId = memberExists._id;
 
@@ -185,6 +191,11 @@ exports.updateMembershipStatus = async (req, res) => {
 
     if (!membership) {
       return res.status(404).json({ message: "Membership not found" });
+    }
+
+    // If membership is cancelled, set the member profile status to inactive
+    if (status === "cancelled") {
+      await Member.findByIdAndUpdate(membership.member, { status: "inactive" });
     }
 
     res.status(200).json(membership);
