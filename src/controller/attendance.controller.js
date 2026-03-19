@@ -1,5 +1,6 @@
 const Attendance = require("../models/Attendance");
 const Member = require("../models/Member");
+const Membership = require("../models/Membership");
 
 // @desc    Record a check-in for a member
 // @route   POST /api/attendance/checkin
@@ -12,6 +13,19 @@ exports.recordCheckIn = async (req, res) => {
     const member = await Member.findById(memberId);
     if (!member) {
       return res.status(404).json({ message: "Member not found. Check-in denied." });
+    }
+
+    // Check if the member has an active, non-expired membership
+    const activeMembership = await Membership.findOne({
+      member: memberId,
+      status: "active",
+      endDate: { $gte: new Date() }
+    });
+
+    if (!activeMembership) {
+      return res.status(403).json({ 
+        message: "Check-in denied. You do not have an active membership. It may have expired or is pending payment." 
+      });
     }
 
     // Check if there is already an open attendance record for today (no checkOutTime)

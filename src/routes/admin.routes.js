@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   getDashboardStats,
   getAllMembersData,
-  getAllTrainers
+  getAllTrainers,
+  activateMembershipManually
 } = require("../controller/admin.controller");
 
 const { protect, admin } = require("../middleware/auth.middleware");
@@ -17,5 +18,6 @@ router.use(admin);
 
 router.get("/stats", getDashboardStats);
 router.get("/trainers", getAllTrainers);
+router.put("/membership/:id/activate", activateMembershipManually);
 
 module.exports = router;

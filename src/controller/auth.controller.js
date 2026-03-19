@@ -3,6 +3,7 @@ const Otp = require("../models/Otp");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
+const sendWhatsApp = require("../utils/sendWhatsApp");
 
 // Generate JWT
 const generateToken = (id) => {
@@ -41,6 +42,10 @@ exports.register = async (req, res) => {
     });
 
     if (user) {
+      // Send WhatsApp Notification to Admin
+      const adminMsg = `🔥 New User Registered at IronCore!\n\nName: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone || 'N/A'}\nRole: ${user.role}`;
+      await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
+
       res.status(201).json({
         _id: user.id,
         name: user.name,

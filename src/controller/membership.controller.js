@@ -1,40 +1,50 @@
 const Membership = require("../models/Membership");
 const Member = require("../models/Member");
 const User = require("../models/User");
-
-// Helper function to calculate end date based on plan name
-const calculateEndDate = (startDate, planName) => {
-  const start = new Date(startDate);
-  switch (planName) {
-    case "daily":
-      return new Date(start.setDate(start.getDate() + 1)); 
-    case "monthly":
-      return new Date(start.setMonth(start.getMonth() + 1));
-    case "quarterly":
-      return new Date(start.setMonth(start.getMonth() + 3));
-    case "yearly":
-      return new Date(start.setFullYear(start.getFullYear() + 1));
-    default:
-      return new Date(start.setMonth(start.getMonth() + 1)); 
-  }
-};
+const sendWhatsApp = require("../utils/sendWhatsApp");
+const { calculateEndDate } = require("../utils/dateUtils");
 
 // @desc    Create a new membership
 // @route   POST /api/memberships
 // @access  Private (Assume Protected)
 exports.createMembership = async (req, res) => {
   try {
-    const { memberId, planName, price, startDate, timeSlot } = req.body;
+    const { memberId, planName, price, startDate, timeSlot, status } = req.body;
 
     if (!timeSlot) {
       return res.status(400).json({ message: "Time slot is required" });
     }
 
-    // Optional: Validate if the member exists before creating membership
-    const memberExists = await Member.findById(memberId);
+    // Robust Member lookup: 
+    // If memberId is a Member ID, great. 
+    // If it's a User ID, find or create the Member profile.
+    let memberExists = await Member.findById(memberId);
+    
     if (!memberExists) {
-      return res.status(404).json({ message: "Member not found" });
+      // Check if maybe it's a User ID
+      memberExists = await Member.findOne({ user: memberId });
+      
+      if (!memberExists) {
+        // Check if a User exists with this ID
+        const user = await User.findById(memberId);
+        if (user) {
+          // Auto-create Member profile for this User
+          const generatedMemberId = 'M' + Math.floor(100000 + Math.random() * 900000).toString();
+          memberExists = await Member.create({
+            user: user._id,
+            memberId: generatedMemberId,
+            status: "active"
+          });
+        }
+      }
     }
+
+    if (!memberExists) {
+      return res.status(404).json({ message: "Member profile not found and could not be created." });
+    }
+
+    // Ensure we use the actual Member document ID for the membership record
+    const actualMemberId = memberExists._id;
 
     const start = startDate ? new Date(startDate) : new Date();
     const endDate = calculateEndDate(start, planName);
@@ -42,7 +52,7 @@ exports.createMembership = async (req, res) => {
     // Validate slot capacity
     const activeInSlot = await Membership.countDocuments({
       timeSlot,
-      status: "active"
+      status: { $in: ["active", "pending"] }
     });
 
     if (activeInSlot >= 20) {
@@ -50,25 +60,26 @@ exports.createMembership = async (req, res) => {
     }
 
     const membership = await Membership.create({
-      member: memberId,
+      member: actualMemberId,
       planName,
       price,
       startDate: start,
       timeSlot,
       endDate,
-      status: "active",
+      status: status || "pending", // Default to pending until payment is verified
       // createdBy: req.user._id // (Assuming an auth middleware injecting user)
     });
 
-    // Reactivate member profile if it was inactive (renewal)
-    memberExists.status = "active";
-    await memberExists.save();
-
-    // Automatically upgrade the User's role to 'member' when they purchase a plan
-    const user = await User.findById(memberExists.user);
-    if (user && user.role === "visitor") {
-      user.role = "member";
-      await user.save();
+    // Send WhatsApp Notification to User & Admin
+    try {
+      const user = await User.findById(memberExists.user);
+      const userMsg = `👋 Hi ${user.name}, your ${membership.planName} plan has been assigned! Status: Pending Payment. Log in to your dashboard to activate.`;
+      const adminMsg = `🎟️ Plan Assigned!\n\nUser: ${user.name}\nPlan: ${membership.planName}\nStatus: Pending`;
+      
+      if (user.phone) await sendWhatsApp(user.phone, userMsg);
+      await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
+    } catch (msgErr) {
+      console.error("Membership notification error:", msgErr.message);
     }
 
     res.status(201).json(membership);
@@ -92,9 +103,9 @@ exports.getAvailableSlots = async (req, res) => {
       slots.push(`${startHour}:00-${endHour}:00`);
     }
 
-    // Aggregate active memberships grouped by timeSlot
+    // Aggregate active and pending memberships grouped by timeSlot
     const activeCounts = await Membership.aggregate([
-      { $match: { status: "active" } },
+      { $match: { status: { $in: ["active", "pending"] } } },
       { $group: { _id: "$timeSlot", count: { $sum: 1 } } }
     ]);
 
@@ -150,13 +161,6 @@ exports.getUserMembership = async (req, res) => {
     if (!membership) {
       // Return 200 with null instead of 404 to avoid browser console errors for new users
       return res.status(200).json(null);
-    }
-
-    // Check for expiration on-the-fly for the user (read-only)
-    if (membership.endDate < new Date()) {
-      // In a real system, you might trigger a cleanup here, but for now just return it as expired
-      // or filter it out so the UI shows "No Active Subscription"
-      return res.status(200).json({ ...membership.toObject(), status: "expired" });
     }
 
     res.status(200).json(membership);

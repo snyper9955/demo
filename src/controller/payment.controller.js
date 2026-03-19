@@ -2,6 +2,9 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Payment = require("../models/Payment");
 const Member = require("../models/Member");
+const Membership = require("../models/Membership");
+const User = require("../models/User");
+const sendWhatsApp = require("../utils/sendWhatsApp");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -63,9 +66,40 @@ exports.verifyPayment = async (req, res) => {
         transactionId: razorpay_payment_id,
         paymentStatus: "success",
       });
+
+      // ACTIVATE MEMBERSHIP AND UPDGRADE USER ROLE
+      if (membershipId) {
+        const membership = await Membership.findById(membershipId);
+        if (membership) {
+          membership.status = "active";
+          await membership.save();
+
+          // Activate Member profile
+          const member = await Member.findById(memberId);
+          if (member) {
+            member.status = "active";
+            await member.save();
+
+            // Upgrade User Role if visitor
+            const user = await User.findById(member.user);
+            if (user && user.role === "visitor") {
+              user.role = "member";
+              await user.save();
+            }
+
+            // Send WhatsApp Notification
+            const userMsg = `✨ Welcome to the family, ${user.name}! Your ${membership.planName} membership is now ACTIVE. See you at the iron!`;
+            const adminMsg = `💰 Payment Verified & Plan Activated!\n\nUser: ${user.name}\nPlan: ${membership.planName}\nAmount: ₹${amount || 99}`;
+            
+            if (user.phone) await sendWhatsApp(user.phone, userMsg);
+            await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
+          }
+        }
+      }
+
     } catch (saveErr) {
       // Don't fail the whole flow if save fails — log and continue
-      console.error("Payment record save error:", saveErr.message);
+      console.error("Payment record save or activation error:", saveErr.message);
     }
 
     res.status(200).json({ success: true, paymentId: razorpay_payment_id });
