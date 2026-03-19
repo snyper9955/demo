@@ -47,8 +47,8 @@ const initCronJobs = () => {
     }
   });
 
-  // Run every minute to catch expired memberships and renew them as 'pending' for testing
-  cron.schedule("* * * * *", async () => {
+  // Run every 30 minutes to catch expired memberships and renew them as 'pending'
+  cron.schedule("*/30 * * * *", async () => {
     console.log("Running auto-renewal transition for expired memberships...");
     
     try {

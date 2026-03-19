@@ -8,7 +8,7 @@ const calculateEndDate = (startDate, planName) => {
   const start = new Date(startDate);
   switch (planName) {
     case "daily":
-      return new Date(start.getTime() + 5 * 60 * 1000); // 5 minutes for testing
+      return new Date(start.setDate(start.getDate() + 1));
     case "monthly":
       return new Date(start.setMonth(start.getMonth() + 1));
     case "quarterly":
