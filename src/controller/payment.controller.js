@@ -107,3 +107,18 @@ exports.verifyPayment = async (req, res) => {
     res.status(500).json({ message: "Verification error", error: error.message });
   }
 };
+
+// @desc   Get payment history for a specific member
+// @route  GET /api/payments/member/:memberId
+exports.getMemberPayments = async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const payments = await Payment.find({ member: memberId })
+      .populate("membership", "planName")
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json(payments);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch payment history", error: error.message });
+  }
+};

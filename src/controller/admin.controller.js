@@ -169,6 +169,23 @@ exports.activateMembershipManually = async (req, res) => {
       membership.member.status = "active";
       await membership.member.save();
     }
+
+    // Create a Payment record for the manual activation
+    try {
+      await Payment.create({
+        member: membership.member._id,
+        membership: membership._id,
+        amount: membership.price || 99,
+        paymentMethod: "cash",
+        transactionId: `manual_${Date.now()}`,
+        paymentStatus: "success",
+        paidAt: new Date(),
+      });
+      console.log(`Payment record created for manual activation of membership ${id}`);
+    } catch (payErr) {
+      console.error("Failed to create payment record for manual activation:", payErr.message);
+    }
+
     console.log(`Membership ${id} saved as active. New End Date: ${newEndDate}`);
 
     // Send WhatsApp notification
