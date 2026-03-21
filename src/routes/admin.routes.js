@@ -4,7 +4,9 @@ const {
   getDashboardStats,
   getAllMembersData,
   getAllTrainers,
-  activateMembershipManually
+  activateMembershipManually,
+  sendPaymentReminder,
+  sendBulkPaymentReminders
 } = require("../controller/admin.controller");
 
 const { protect, admin } = require("../middleware/auth.middleware");
@@ -19,5 +21,7 @@ router.use(admin);
 router.get("/stats", getDashboardStats);
 router.get("/trainers", getAllTrainers);
 router.put("/membership/:id/activate", activateMembershipManually);
+router.post("/membership/:id/send-reminder", sendPaymentReminder);
+router.post("/members/send-bulk-reminders", sendBulkPaymentReminders);
 
 module.exports = router;

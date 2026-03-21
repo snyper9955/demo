@@ -87,11 +87,9 @@ exports.verifyPayment = async (req, res) => {
               await user.save();
             }
 
-            // Send WhatsApp Notification
-            const userMsg = `✨ Welcome to the family, ${user.name}! Your ${membership.planName} membership is now ACTIVE. See you at the iron!`;
+            // Send WhatsApp Notification to Admin
             const adminMsg = `💰 Payment Verified & Plan Activated!\n\nUser: ${user.name}\nPlan: ${membership.planName}\nAmount: ₹${amount || 99}`;
             
-            if (user.phone) await sendWhatsApp(user.phone, userMsg);
             await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
           }
         }

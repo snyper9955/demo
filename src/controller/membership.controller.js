@@ -76,13 +76,12 @@ exports.createMembership = async (req, res) => {
       // createdBy: req.user._id // (Assuming an auth middleware injecting user)
     });
 
-    // Send WhatsApp Notification to User & Admin
+    // Send WhatsApp Notification to Admin
     try {
+      console.log(`[WhatsApp] Notifying Admin of plan assignment for user in member ${memberExists._id}`);
       const user = await User.findById(memberExists.user);
-      const userMsg = `👋 Hi ${user.name}, your ${membership.planName} plan has been assigned! Status: Pending Payment. Log in to your dashboard to activate.`;
       const adminMsg = `🎟️ Plan Assigned!\n\nUser: ${user.name}\nPlan: ${membership.planName}\nStatus: Pending`;
       
-      if (user.phone) await sendWhatsApp(user.phone, userMsg);
       await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
     } catch (msgErr) {
       console.error("Membership notification error:", msgErr.message);
@@ -196,6 +195,16 @@ exports.updateMembershipStatus = async (req, res) => {
     // If membership is cancelled, set the member profile status to inactive
     if (status === "cancelled") {
       await Member.findByIdAndUpdate(membership.member, { status: "inactive" });
+      
+      // Send WhatsApp Notification to Admin
+      try {
+        console.log(`[WhatsApp] Notifying Admin of cancellation for membership ${id}`);
+        const member = await Member.findById(membership.member).populate("user");
+        const adminMsg = `🚫 Membership Cancelled!\n\nUser: ${member.user.name}\nPlan: ${membership.planName}\nStatus: Cancelled`;
+        await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
+      } catch (msgErr) {
+        console.error("Cancellation notification error:", msgErr.message);
+      }
     }
 
     res.status(200).json(membership);

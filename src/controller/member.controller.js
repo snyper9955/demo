@@ -67,7 +67,7 @@ exports.getMemberByUser = async (req, res) => {
 exports.updateMember = async (req, res) => {
   try {
     const { id } = req.params; // This is the user ID now, based on my refactored frontend/backend logic
-    const { emergencyContactName, emergencyContactPhone, trainerAssignedId, role, timeSlot, timeSlots } = req.body;
+    const { emergencyContactName, emergencyContactPhone, trainerAssignedId, role, timeSlot, timeSlots, height, weight } = req.body;
 
     // 1. Update User Role if requested
     const user = await User.findById(id);
@@ -77,8 +77,12 @@ exports.updateMember = async (req, res) => {
 
     if (role && ["admin", "trainer", "member", "visitor"].includes(role)) {
       user.role = role;
-      await user.save();
     }
+
+    if (height !== undefined) user.height = height;
+    if (weight !== undefined) user.weight = weight;
+
+    await user.save();
 
     // 2. Update Member Profile
     let member = await Member.findOne({ user: id });

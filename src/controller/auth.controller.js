@@ -79,6 +79,15 @@ exports.login = async (req, res) => {
         role: user.role,
         token: generateToken(user._id),
       });
+
+      // Send WhatsApp Notification to Admin
+      try {
+        console.log(`[WhatsApp] Notifying Admin of login for user ${user.name}`);
+        const adminMsg = `🔑 User Login: ${user.name}\nEmail: ${user.email}\nRole: ${user.role}\nTime: ${new Date().toLocaleString()}`;
+        await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
+      } catch (msgErr) {
+        console.error("Login notification error:", msgErr.message);
+      }
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
@@ -208,6 +217,8 @@ exports.updateProfile = async (req, res) => {
       user.gender = req.body.gender || user.gender;
       user.address = req.body.address || user.address;
       user.dateOfBirth = req.body.dateOfBirth || user.dateOfBirth;
+      user.height = req.body.height || user.height;
+      user.weight = req.body.weight || user.weight;
 
       const updatedUser = await user.save();
 
@@ -219,6 +230,8 @@ exports.updateProfile = async (req, res) => {
         gender: updatedUser.gender,
         address: updatedUser.address,
         dateOfBirth: updatedUser.dateOfBirth,
+        height: updatedUser.height,
+        weight: updatedUser.weight,
         role: updatedUser.role,
       });
     } else {

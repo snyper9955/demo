@@ -108,6 +108,8 @@ exports.getAllMembersData = async (req, res) => {
                 emergencyContact: member ? member.emergencyContact : null,
                 trainerAssignedId: member?.trainerAssigned?._id || null,
                 membershipId,
+                height: u.height || "",
+                weight: u.weight || "",
             }),
             isInsideTheGym: false
         };
@@ -188,15 +190,12 @@ exports.activateMembershipManually = async (req, res) => {
 
     console.log(`Membership ${id} saved as active. New End Date: ${newEndDate}`);
 
-    // Send WhatsApp notification
+    // Send WhatsApp Notification to Admin
     try {
-      if (membership.member && membership.member.user && membership.member.user.phone) {
-        console.log(`Sending WhatsApp notification to ${membership.member.user.phone}`);
-        const msg = `✅ Hi ${membership.member.user.name}, your ${membership.planName} membership has been manually activated by Admin! It is now valid until ${newEndDate.toLocaleDateString()}.`;
-        await sendWhatsApp(membership.member.user.phone, msg);
-      } else {
-        console.log("No user phone found for notification.");
-      }
+      console.log(`[WhatsApp] Notifying Admin of manual activation for membership ${id}`);
+      // Send WhatsApp Notification to Admin
+      const adminMsg = `✅ Manual Activation Successful!\n\nUser: ${membership.member.user.name}\nPlan: ${membership.planName}\nActivated By: Admin`;
+      await sendWhatsApp(process.env.ADMIN_WHATSAPP_NUMBER, adminMsg);
     } catch (msgErr) {
       console.error("Manual activation notification error:", msgErr.message);
     }
@@ -211,4 +210,18 @@ exports.activateMembershipManually = async (req, res) => {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
     });
   }
+};
+
+// @desc    Send a WhatsApp reminder to a specific member (Deprecated - now handled via frontend link)
+// @route   POST /api/admin/membership/:id/send-reminder
+// @access  Private (Admin Only)
+exports.sendPaymentReminder = async (req, res) => {
+  res.status(410).json({ message: "This endpoint is deprecated. Use manual WhatsApp links from the frontend." });
+};
+
+// @desc    Send WhatsApp reminders to all members (Deprecated - now handled via frontend link)
+// @route   POST /api/admin/members/send-bulk-reminders
+// @access  Private (Admin Only)
+exports.sendBulkPaymentReminders = async (req, res) => {
+  res.status(410).json({ message: "This endpoint is deprecated. Use manual WhatsApp links from the frontend." });
 };

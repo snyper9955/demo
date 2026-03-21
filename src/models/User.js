@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema({
   address: String,
 
   dateOfBirth: Date,
+  height: String,
+  weight: String,
 
   role: {
     type: String,
